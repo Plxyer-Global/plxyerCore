@@ -6,12 +6,16 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IKeyNFT.sol";
 error NonTransferable();
-contract keyNFT is ERC1155, AccessControl,IKeyNFT,Ownable {
+contract KeyNFT is ERC1155, AccessControl,IKeyNFT,Ownable {
+
+    string constant public name='KPLX';
+    string constant public symbol="KPLX";
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     constructor() ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(URI_SETTER_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE,msg.sender);
     }
     function setURI(string memory newuri) public onlyRole(URI_SETTER_ROLE) {
         _setURI(newuri);

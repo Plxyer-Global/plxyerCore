@@ -32,7 +32,12 @@ contract PlxyerStore is AccessControl{
     address public royaltyCollector;
     IPriceOracle priceOracle;
     IKeyNFT keyNFT;
-    constructor(){}
+    constructor(IKeyNFT _keyNFT,IPriceOracle _priceOracle){
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(LISTING_ADMIN, msg.sender);
+        keyNFT = _keyNFT;
+        priceOracle = _priceOracle;
+    }
     function listGame(uint256 _id,string calldata _name,uint256 _price,uint256 _royalroyaltyfee,address _seller)public isNew(_id,_name) onlyRole(LISTING_ADMIN){
         if(_id== 0){
             revert GameIdCannotBe0();
