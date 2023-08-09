@@ -24,7 +24,22 @@ describe("KeyNFT", function () {
   })
   it("non transferable", async()=>{
     expect(await kNFT.mint(owner.address,1,1,"0x")).to.emit(kNFT,"TransferSingle")
+    const distributer = await kNFT.DISTRIBUTOR_ROLE()
+    await kNFT.revokeRole(distributer,owner.address)
     await expect(kNFT.safeTransferFrom(owner.address,other.address,1,1,"0x")).to.be.revertedWithCustomError(kNFT,"NonTransferable")
     await expect(kNFT.safeBatchTransferFrom(owner.address,other.address,[1],[1],"0x")).to.be.revertedWithCustomError(kNFT,"NonTransferable")
+
+    await kNFT.grantRole(distributer,owner.address)
+    expect(await kNFT.batchMint(owner.address,[2,3],[2,3],"0x")).to.emit(kNFT,"TransferSingle")
+
+    expect(await kNFT.safeTransferFrom(owner.address,other.address,1,1,"0x")).to.emit(kNFT,"TransferSingle")
+    expect(await kNFT.safeBatchTransferFrom(owner.address,other.address,[2,3],[1,1],"0x")).to.emit(kNFT,"TransferBatch")
+
+    expect(await kNFT.balanceOf(other.address,1)).to.eq(1)
+    expect(await kNFT.balanceOf(other.address,2)).to.eq(1)
+    expect(await kNFT.balanceOf(other.address,3)).to.eq(1)
+  })
+  it("distributors can transfer",async()=>{
+
   })
 });

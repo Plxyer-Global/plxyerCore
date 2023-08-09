@@ -12,10 +12,12 @@ contract KeyNFT is ERC1155, AccessControl,IKeyNFT,Ownable {
     string constant public symbol="KPLX";
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
     constructor() ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(URI_SETTER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE,msg.sender);
+        _grantRole(DISTRIBUTOR_ROLE,msg.sender);
     }
     function setURI(string memory newuri) public onlyRole(URI_SETTER_ROLE) {
         _setURI(newuri);
@@ -26,8 +28,12 @@ contract KeyNFT is ERC1155, AccessControl,IKeyNFT,Ownable {
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) public pure override(ERC1155, IERC1155) {
-       revert NonTransferable();
+    ) public  override(ERC1155, IERC1155) {
+       if(!hasRole(DISTRIBUTOR_ROLE,from)){
+            revert NonTransferable();
+       }
+       super.safeBatchTransferFrom( from,to,ids,amounts,data);
+       
     }
     function safeTransferFrom(
         address from,
@@ -35,8 +41,11 @@ contract KeyNFT is ERC1155, AccessControl,IKeyNFT,Ownable {
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) public virtual pure override(ERC1155, IERC1155) {
-        revert NonTransferable();
+    ) public virtual  override(ERC1155, IERC1155) {
+      if(!hasRole(DISTRIBUTOR_ROLE,from)){
+            revert NonTransferable();
+       }
+       super.safeTransferFrom(from,to,id,amount,data);
     }
 
     // The following functions are overrides required by Solidity.
