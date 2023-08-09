@@ -16,7 +16,7 @@ export const PLXFixture = async()=>{
 export const priceOracleFixture = async()=>{
     const priceOracle = await ethers.getContractFactory("PriceOracle")
     const {TPLX} = await PLXFixture()
-    const oracle = priceOracle.deploy()
+    const oracle = await priceOracle.deploy()
     return {TPLX,oracle}
 }
 export const PlxyerStoreFixture = async()=>{
