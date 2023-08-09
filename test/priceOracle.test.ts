@@ -23,11 +23,7 @@ describe("PriceOracle",()=>{
     await expect(POracle.connect(other).setPrice(price,await PLX.getAddress())).to.be.reverted
     expect (await POracle.setPrice(price,await PLX.getAddress())).to.be.ok
   })
-  it("only pricesetter set Price",async()=>{
-    await expect(POracle.connect(other).setPrice(price,await PLX.getAddress())).to.be.reverted
-    expect (await POracle.setPrice(price,await PLX.getAddress())).to.be.ok
-  })
-  it("fetch suppported price",async()=>{
+  it("fetch suppported token  only price",async()=>{
     const address =await PLX.getAddress()
     expect (await POracle.setPrice(price,address)).to.be.ok
     const currencyRole = await POracle.SUPPORTED_CURRENCY()

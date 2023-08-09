@@ -26,7 +26,7 @@ contract KeyNFT is ERC1155, AccessControl,IKeyNFT,Ownable {
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) public pure override {
+    ) public pure override(ERC1155, IERC1155) {
        revert NonTransferable();
     }
     function safeTransferFrom(
@@ -35,7 +35,7 @@ contract KeyNFT is ERC1155, AccessControl,IKeyNFT,Ownable {
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) public virtual pure override {
+    ) public virtual pure override(ERC1155, IERC1155) {
         revert NonTransferable();
     }
 
@@ -49,7 +49,7 @@ contract KeyNFT is ERC1155, AccessControl,IKeyNFT,Ownable {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC1155, AccessControl)
+        override(AccessControl, ERC1155, IERC165)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

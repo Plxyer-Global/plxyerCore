@@ -20,8 +20,16 @@ export const priceOracleFixture = async()=>{
     return {TPLX,oracle}
 }
 export const PlxyerStoreFixture = async()=>{
-    const ercFactory= await ethers.getContractFactory("ERC20")
+    const [owner,other,feecollector] = await ethers.getSigners()
+    const PLX= await ethers.getContractFactory("TPLXY")
+    const invalidCurrency = await PLX.deploy()
     const {nft} = await keyNFTFixture()
+    const {TPLX,oracle} = await priceOracleFixture()
+    const currencyRole = await oracle.SUPPORTED_CURRENCY()
+    await oracle.grantRole(currencyRole,await TPLX.getAddress())
+    const MINTER_ROLE = await nft.MINTER_ROLE()
     const plxyerFactory = await ethers.getContractFactory("PlxyerStore")
-    
+    const store = await plxyerFactory.deploy(await nft.getAddress(),await oracle.getAddress(),feecollector.address)
+    await nft.grantRole(MINTER_ROLE,await store.getAddress())
+    return {TPLX,oracle,store,nft,invalidCurrency}
 }
