@@ -7,6 +7,7 @@ import "./interfaces/IPriceOracle.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IKeyNFT.sol";
+import "./interfaces/IPlxyerStore.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
@@ -18,25 +19,17 @@ error GameDoesntExist();
 error GameIdCannotBe0();
 error GameAlreadyOwned(uint256 id);
 error UnauthorisedNotRoyaltyFeeCollector();
-struct Game{
-    uint256 id;
-    string name;
-    uint256 price; // dollar terms
-    uint256 royaltyfee;
-    address seller;
-}
-contract PlxyerStore is AccessControl{
+
+contract PlxyerStore is AccessControl,IPlxyerStore{
     using SafeERC20 for IERC20;
     bytes32 public constant LISTING_ADMIN = keccak256("LISTING_ADMIN");
     mapping (uint256 id => Game) public ListedGames;
     mapping (string name => bool) internal nameInUse;
     uint256 constant percision  = 1e18;
-    uint256 constant maxRoyaltyFee  =  20 * 1e18;
+    uint256 constant public maxRoyaltyFee  =  20 * 1e18;
     address public royaltyFeeCollector;
     IPriceOracle priceOracle;
     IKeyNFT keyNFT;
-    event buy(address indexed buyer, address indexed to, uint256 gameId,uint256 amountPaid,address paidWith);
-    event BatchBuy(address indexed buyer, address indexed to,uint256[] gameIds,uint256 amountPaid,address paidWith);
     constructor(IKeyNFT _keyNFT,IPriceOracle _priceOracle,address _royaltyFeeCollector){
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(LISTING_ADMIN, msg.sender);
@@ -59,22 +52,33 @@ contract PlxyerStore is AccessControl{
             _seller
         );
         nameInUse[_name] = true;
+        emit listingUpdated(_id,ListedGames[_id]);
     }
-    function updatePriceBatch(uint256[] calldata _id,uint256[] calldata prices) public onlyRole(LISTING_ADMIN){
-        for(uint256 i = 0;i < _id.length; i ++){
-             ListedGames[_id[i]].price = prices[i];
+    function updatePriceBatch(uint256[] calldata _ids,uint256[] calldata prices) public onlyRole(LISTING_ADMIN){
+        for(uint256 i = 0;i < _ids.length; i ++){
+            ListedGames[_ids[i]].price = prices[i];
         }
+        emit batchPriceUpdated(_ids,prices);
     }
-    function updateRoyaltyFeeBatch(uint256[] calldata _id,uint256[] calldata _royaltyFee) public onlyRole(LISTING_ADMIN){
-        for(uint256 i = 0;i < _id.length; i ++){
-             ListedGames[_id[i]].royaltyfee = _royaltyFee[i];
+    function updateRoyaltyFeeBatch(uint256[] calldata _ids,uint256[] calldata _royaltyFees) public onlyRole(LISTING_ADMIN){
+        for(uint256 i = 0;i < _ids.length; i ++){
+            if( _royaltyFees[i] >maxRoyaltyFee ){
+                revert RoyaltyFeeTooHigh();
+            }
+            ListedGames[_ids[i]].royaltyfee = _royaltyFees[i];
         }
+        emit batchRoyaltyFeeUpdated(_ids,_royaltyFees);
     }
     function updatePrice(uint256  _id,uint256  price) public onlyRole(LISTING_ADMIN){
         ListedGames[_id].price = price;  
+        emit priceUpdated(_id, price);
     }
     function updateRoyaltyFee(uint256  _id,uint256  _royaltyFee) public onlyRole(LISTING_ADMIN){ 
+         if( _royaltyFee>maxRoyaltyFee ){
+                revert RoyaltyFeeTooHigh();
+        }
         ListedGames[_id].royaltyfee = _royaltyFee;
+        emit royaltyFeeUpdated(_id,_royaltyFee);
     }
     function DeListGame(uint256 _id) external onlyRole(DEFAULT_ADMIN_ROLE){
         delete ListedGames[_id];
@@ -85,6 +89,7 @@ contract PlxyerStore is AccessControl{
             revert UnauthorisedNotSeller();
         }
         g.seller = newSeller;
+        emit sellerUpdated(_id,newSeller);
     }
     function buyGame(uint256  _id,address currency,address to) external{
         Game memory g = ListedGames[_id];
@@ -127,7 +132,7 @@ contract PlxyerStore is AccessControl{
         IERC20(currency).safeTransferFrom(msg.sender,royaltyFeeCollector,feeAmount);
         bytes memory data = abi.encode("buyBatchGame",_ids,currency,msg.sender,address(this));
         keyNFT.batchMint(to, _ids, amounts, data);
-        emit BatchBuy(msg.sender,to,_ids,totalPaid,currency);
+        emit batchBuy(msg.sender,to,_ids,totalPaid,currency);
     }
     function setPriceOracle(IPriceOracle oracle) external onlyRole(DEFAULT_ADMIN_ROLE){
         priceOracle = oracle;
