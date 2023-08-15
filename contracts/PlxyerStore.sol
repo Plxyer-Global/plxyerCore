@@ -3,9 +3,10 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./interfaces/IPriceOracle.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./interfaces/IPriceOracle.sol";
 import "./interfaces/IKeyNFT.sol";
 import "./interfaces/IPlxyerStore.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -20,7 +21,7 @@ error GameIdCannotBe0();
 error GameAlreadyOwned(uint256 id);
 error UnauthorisedNotRoyaltyFeeCollector();
 
-contract PlxyerStore is AccessControl,IPlxyerStore{
+contract PlxyerStore is AccessControl,IPlxyerStore,ReentrancyGuard{
     using SafeERC20 for IERC20;
     bytes32 public constant LISTING_ADMIN = keccak256("LISTING_ADMIN");
     mapping (uint256 id => Game) public ListedGames;
@@ -69,9 +70,13 @@ contract PlxyerStore is AccessControl,IPlxyerStore{
         }
         emit batchRoyaltyFeeUpdated(_ids,_royaltyFees);
     }
-    function updatePrice(uint256  _id,uint256  price) public onlyRole(LISTING_ADMIN){
+    function updatePrice(uint256  _id,uint256  price) public {
+        if(!hasRole(LISTING_ADMIN,msg.sender) && ListedGames[_id].seller != msg.sender){
+           revert UnauthorisedNotSeller();
+        }
         ListedGames[_id].price = price;  
         emit priceUpdated(_id, price);
+       
     }
     function updateRoyaltyFee(uint256  _id,uint256  _royaltyFee) public onlyRole(LISTING_ADMIN){ 
          if( _royaltyFee>maxRoyaltyFee ){
@@ -91,7 +96,7 @@ contract PlxyerStore is AccessControl,IPlxyerStore{
         g.seller = newSeller;
         emit sellerUpdated(_id,newSeller);
     }
-    function buyGame(uint256  _id,address currency,address to) external{
+    function buyGame(uint256  _id,address currency,address to) external nonReentrant{
         Game memory g = ListedGames[_id];
         if(g.id == 0){
             revert GameDoesntExist();
@@ -107,7 +112,7 @@ contract PlxyerStore is AccessControl,IPlxyerStore{
         keyNFT.mint(to, _id, 1, data);
         emit buy(msg.sender,to,_id,payAmount,currency);
     }
-    function buyBatch(uint256[] memory _ids, address to,address currency) external{
+    function buyBatch(uint256[] memory _ids, address to,address currency) external nonReentrant{
         uint256 price = priceOracle.price(currency);
         uint256 feeAmount;
         uint256 totalPaid;

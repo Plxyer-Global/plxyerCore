@@ -117,8 +117,9 @@ describe("PlxyerStore", () => {
     ethers.parseUnits("10"), other.address)).to.be.ok
     expect(await plxyerStore.listGame(2, "game2", ethers.parseUnits("69"), 
     ethers.parseUnits("10"), other.address)).to.be.ok
-    await expect(plxyerStore.connect(other).updatePrice(1, ethers.parseUnits("30"))).to.be.reverted
+    await expect(plxyerStore.connect(royaltyfeeCollector).updatePrice(1, ethers.parseUnits("30"))).to.be.reverted
     expect(await plxyerStore.updatePrice(1, ethers.parseUnits("30"))).to.emit(plxyerStore,"priceUpdated")
+    expect(await plxyerStore.connect(other).updatePrice(1, ethers.parseUnits("30"))).to.emit(plxyerStore,"priceUpdated")
     expect((await plxyerStore.ListedGames(1)).price).to.be.eq( ethers.parseUnits("30"))
 
     await expect(plxyerStore.connect(other).updatePriceBatch([1,2], [ethers.parseUnits("30"),ethers.parseUnits("30")])).to.be.reverted
