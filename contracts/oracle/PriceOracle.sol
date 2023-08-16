@@ -25,12 +25,12 @@ contract PriceOracle is IPriceOracle, AccessControl {
         if(!hasRole(SUPPORTED_CURRENCY,tokenAddress)){
             revert unsupportedToken();
         }
+        if(amountUSD == 0) return 0;
         uint256 amountInToken = amountUSD * percision/ _price[tokenAddress];
         return amountInToken;
     }
 
     function setPrice(uint256 amount, address tokenAddress) public onlyRole(PRICE_SETTER){
-        
         _price[tokenAddress] = amount;
     }
 
