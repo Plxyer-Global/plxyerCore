@@ -7,6 +7,7 @@ struct Game{
     uint256 price; // dollar terms
     uint256 royaltyfee;
     address seller;
+    uint256 copiesSold;
 }
 interface IPlxyerStore{
     event buy(address indexed buyer, address indexed to, uint256 gameId,uint256 amountPaid,address paidWith);
@@ -18,7 +19,7 @@ interface IPlxyerStore{
     event batchRoyaltyFeeUpdated(uint256[] ids,uint256[] fees);
     event sellerUpdated(uint256 indexed id,address seller);
     event delisted(uint256 indexed id);
-    function ListedGames(uint256) external returns(uint256 id,string memory name,uint256 price,uint256 royaltyfee,address seller);
+    function ListedGames(uint256) external returns(uint256 id,string memory name,uint256 price,uint256 royaltyfee,address seller,uint256 copiesSold);
     function royaltyFeeCollector() external returns(address);
     function updatePrice(uint256  _id,uint256  price) external;
     function updatePriceBatch(uint256[] calldata _id,uint256[] calldata prices) external;

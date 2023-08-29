@@ -64,6 +64,7 @@ describe("PlxyerStore", () => {
     expect(await PLX.balanceOf( royaltyfeeCollector.address)).to.be.eq(ethers.parseUnits("345"))
     expect(await PLX.balanceOf( other.address)).to.be.eq(ethers.parseUnits("3105"))
     expect(await KNFT.balanceOf(other.address,1)).to.be.eq(1)
+    expect((await plxyerStore.ListedGames(1)).copiesSold).to.be.eq(1)
   })
   it("higher priced tokens dont cause price error",async()=>{
     expect(await plxyerStore.listGame(1, "game1", ethers.parseUnits("69"), 
@@ -99,6 +100,8 @@ describe("PlxyerStore", () => {
     expect(await KNFT.balanceOf(other.address,2)).to.be.eq(1)
     expect(await PLX.balanceOf(royaltyfeeCollector.address)).to.be.eq(ethers.parseUnits("690"))
     expect(await PLX.balanceOf(other.address)).to.be.eq(ethers.parseUnits("6210"))
+    expect((await plxyerStore.ListedGames(1)).copiesSold).to.be.eq(1)
+    expect((await plxyerStore.ListedGames(2)).copiesSold).to.be.eq(1)
   })
   it("can deListgames", async()=>{ 
     expect(await plxyerStore.listGame(1, "game1", ethers.parseUnits("69"), 

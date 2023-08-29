@@ -29,6 +29,7 @@ contract PlxyerStore is AccessControl,IPlxyerStore,ReentrancyGuard{
     uint256 constant percision  = 1e18;
     uint256 constant public maxRoyaltyFee  =  20 * 1e18;
     address public royaltyFeeCollector;
+    uint256 gameIDsCounter = 1;
     IPriceOracle priceOracle;
     IKeyNFT keyNFT;
     constructor(IKeyNFT _keyNFT,IPriceOracle _priceOracle,address _royaltyFeeCollector){
@@ -50,7 +51,7 @@ contract PlxyerStore is AccessControl,IPlxyerStore,ReentrancyGuard{
             _name,
             _price,
             _royalroyaltyfee,
-            _seller
+            _seller,0
         );
         nameInUse[_name] = true;
         emit listingUpdated(_id,ListedGames[_id]);
@@ -97,13 +98,14 @@ contract PlxyerStore is AccessControl,IPlxyerStore,ReentrancyGuard{
         emit sellerUpdated(_id,newSeller);
     }
     function buyGame(uint256  _id,address currency,address to) external nonReentrant{
-        Game memory g = ListedGames[_id];
+        Game storage g = ListedGames[_id];
         if(g.id == 0){
             revert GameDoesntExist();
         }
         if(keyNFT.balanceOf(to, _id) >=1){
             revert GameAlreadyOwned(_id);
         }
+        g.copiesSold+=1;
         uint256 payAmount = priceOracle.getTokenAmount(g.price,currency);
         uint256 feeAmount = (payAmount * g.royaltyfee) /(100 * 1e18);
         IERC20(currency).safeTransferFrom(msg.sender,royaltyFeeCollector,feeAmount);
@@ -118,7 +120,7 @@ contract PlxyerStore is AccessControl,IPlxyerStore,ReentrancyGuard{
         uint256 totalPaid;
         uint256[] memory amounts = new uint256[](_ids.length);
         for(uint256 i = 0; i < _ids.length; i ++){           
-            Game memory g =  ListedGames[_ids[i]];
+            Game storage g =  ListedGames[_ids[i]];
             if(g.id == 0){
                 revert GameDoesntExist();
             }
@@ -130,6 +132,7 @@ contract PlxyerStore is AccessControl,IPlxyerStore,ReentrancyGuard{
             feeAmount += _feeAmount;
             IERC20(currency).safeTransferFrom(msg.sender,g.seller,amountinToken);
             amounts[i] = 1;
+            g.copiesSold+=1;
             totalPaid +=   g.price;
         }
         feeAmount = feeAmount * 1e18/ price;
